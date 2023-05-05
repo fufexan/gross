@@ -1,3 +1,4 @@
+use clap::command;
 use clap::{Parser, Subcommand};
 
 #[derive(Parser)]
@@ -21,9 +22,7 @@ enum Commands {
     Brightness,
     /// Output music info
     Music,
-    /// Output internet info
-    Net,
-    /// Output system info
+    /// Output system info, including net
     SystemInfo,
     /// Output volume info
     Volume,
@@ -45,32 +44,35 @@ fn main() {
     // You can check for the existence of subcommands, and if found use their
     // matches just as you would the top level cmd
     match &cli.command {
-        Some(Commands::Workspaces) => {
-            println!("Workspaces command");
-        }
-        Some(Commands::Music) => {
-            println!("Music command");
-        }
         Some(Commands::Battery) => {
             println!("Battery command");
+            // upower-dbus crate
         }
         Some(Commands::Bluetooth) => {
             println!("Bluetooth command");
-        }
-        Some(Commands::Net) => {
-            println!("Net command");
-        }
-        Some(Commands::Volume) => {
-            println!("Volume command");
+            // bluer crate
         }
         Some(Commands::Brightness) => {
             println!("Brightness command");
+            // brightness crate
+        }
+        Some(Commands::Music) => {
+            println!("Music command");
+            // mpris crate
         }
         Some(Commands::SystemInfo) => {
             println!("SystemInfo command");
+            // sysinfo crate
+            // includes net info
+        }
+        Some(Commands::Volume) => {
+            println!("Volume command");
+            // pipewire crate?
+        }
+        Some(Commands::Workspaces) => {
+            println!("Workspaces command");
+            // hyprland-rs crate
         }
         None => {}
     }
-
-    // Continued program logic goes here...
 }
