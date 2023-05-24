@@ -1,6 +1,8 @@
 use clap::command;
 use clap::{Parser, Subcommand};
 
+mod music;
+
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
 struct Cli {
@@ -58,6 +60,7 @@ fn main() {
         }
         Some(Commands::Music) => {
             println!("Music command");
+            music::music();
             // mpris crate
         }
         Some(Commands::SystemInfo) => {
