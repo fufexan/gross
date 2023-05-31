@@ -259,8 +259,6 @@ checksum = "f051f77a7c8e6957c0696eac88f26b0117e54f52d3fc682ab19397a8812846a4"
 [[package]]
 name = "mpris"
 version = "2.0.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "9e3d377fd27d9d5c7145341cd3affcb83839c24c73e7460488b3ae0a3f9c5166"
 dependencies = [
  "dbus",
  "derive_is_enum_variant",

@@ -2,6 +2,7 @@ use clap::command;
 use clap::{Parser, Subcommand};
 
 mod music;
+mod music_time;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -24,6 +25,8 @@ enum Commands {
     Brightness,
     /// Output music info
     Music,
+    /// Output music time info
+    MusicTime,
     /// Output system info, including net
     SystemInfo,
     /// Output volume info
@@ -60,7 +63,12 @@ fn main() {
         }
         Some(Commands::Music) => {
             println!("Music command");
-            music::music();
+            music::main();
+            // mpris crate
+        }
+        Some(Commands::MusicTime) => {
+            println!("Music command");
+            music_time::main();
             // mpris crate
         }
         Some(Commands::SystemInfo) => {
