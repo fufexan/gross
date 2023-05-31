@@ -17,21 +17,21 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum Commands {
-    /// Output battery info
+    /// Battery info
     Battery,
-    /// Output Bluetooth info
+    /// Bluetooth info
     Bluetooth,
-    /// Output brightness info
+    /// Brightness info
     Brightness,
-    /// Output music info
+    /// General information about a song
     Music,
-    /// Output music time info
+    /// Time information about a song
     MusicTime,
-    /// Output system info, including net
+    /// System info, including net
     SystemInfo,
-    /// Output volume info
+    /// Volume info
     Volume,
-    /// Output workspaces info
+    /// Workspaces info
     Workspaces,
 }
 
@@ -62,14 +62,10 @@ fn main() {
             // brightness crate
         }
         Some(Commands::Music) => {
-            println!("Music command");
             music::main();
-            // mpris crate
         }
         Some(Commands::MusicTime) => {
-            println!("Music command");
             music_time::main();
-            // mpris crate
         }
         Some(Commands::SystemInfo) => {
             println!("SystemInfo command");
