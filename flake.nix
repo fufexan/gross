@@ -23,6 +23,7 @@
         ...
       }: {
         devShells.default = pkgs.mkShell {
+          inputsFrom = [config.packages.gross];
           packages = with pkgs; [
             cargo
             clippy
@@ -34,9 +35,6 @@
             vscode-extensions.llvm-org.lldb-vscode
           ];
 
-          nativeBuildInputs = with pkgs; [pkg-config];
-          buildInputs = with pkgs; [dbus];
-
           RUST_SRC_PATH = pkgs.rustPlatform.rustLibSrc;
         };
 
@@ -44,7 +42,7 @@
           gross = (pkgs.callPackage inputs.naersk {}).buildPackage {
             src = ./.;
             nativeBuildInputs = with pkgs; [pkg-config];
-            buildInputs = with pkgs; [dbus];
+            buildInputs = with pkgs; [dbus openssl];
           };
         } // { default = config.packages.gross; };
 

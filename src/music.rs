@@ -1,6 +1,9 @@
+use image::io::Reader as ImageReader;
 use mpris::{Metadata, PlaybackStatus, PlayerFinder, Progress, ProgressTick};
 use serde_json::json;
 use std::time::Duration;
+extern crate dirs;
+extern crate reqwest;
 
 pub fn main() {
     let player = match PlayerFinder::new() {
@@ -42,6 +45,7 @@ pub fn main() {
             "title": get_title(metadata),
             "duration": duration,
             "cover": get_cover(metadata),
+            // "background": get_background(metadata),
         });
 
         println!("{}", data);
@@ -85,20 +89,48 @@ fn get_title(metadata: &Metadata) -> String {
 
 fn get_playback_status(progress: &Progress) -> String {
     match progress.playback_status() {
-        PlaybackStatus::Playing => "",
-        PlaybackStatus::Paused => "",
+        PlaybackStatus::Playing => "",
+        PlaybackStatus::Paused => "",
         PlaybackStatus::Stopped => "",
     }
     .to_string()
 }
 
+/// Caches cover art URLs and returns the path
 fn get_cover(metadata: &Metadata) -> String {
-    metadata
-        .art_url()
-        .unwrap_or("No cover art found")
-        .to_string()
+    let cache_dir = dirs::cache_dir().unwrap().into_os_string();
+    let url = metadata.art_url().unwrap_or("No cover art found");
+
+    if !url.starts_with("https://") {
+        // early return, don't cache on-disk files
+        return url.to_owned();
+    }
+
+    let (_, suffix) = url.rsplit_once('/').unwrap();
+    let cover = std::path::Path::new(&cache_dir)
+        .join("eww/covers")
+        .join(suffix);
+
+    if !cover.exists() {
+        std::fs::create_dir_all(cover.parent().unwrap()).unwrap();
+        let mut file = std::fs::File::create(&cover).unwrap();
+
+        reqwest::blocking::get(url)
+            .unwrap()
+            .copy_to(&mut file)
+            .unwrap();
+    }
+
+    cover.into_os_string().into_string().unwrap()
 }
 
-// fn get_background(metadata: &Metadata) -> String {
+// fn get_background(metadata: &Metadata) -> std::ffi::OsString {
 //     let url = metadata.art_url().unwrap_or("No cover art found");
+//     let cover = std::path::Path::new(url);
+
+//     if cover.exists() {
+//         cover.file_stem().unwrap().to_owned()
+//     } else {
+//         let img = ImageReader::open(url).unwrap().decode().unwrap().blur(25.0);
+//     }
 // }
