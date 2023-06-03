@@ -1,62 +1,51 @@
-use image::{ImageFormat, ImageOutputFormat};
-use mpris::{Metadata, PlaybackStatus, PlayerFinder, Progress, ProgressTick};
+use image::{io::Reader, ImageOutputFormat};
+use mpris::{Metadata, PlaybackStatus, PlayerFinder};
 use serde_json::json;
 use std::{
     fs::File,
-    io::BufReader,
     path::{Path, PathBuf},
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 extern crate dirs;
 extern crate reqwest;
 
 pub fn main() {
-    let player = match PlayerFinder::new() {
-        Ok(player) => match player.find_active() {
-            Ok(p) => p,
-            Err(e) => panic!("{}", e),
-        },
-        Err(e) => panic!("{}", e),
-    };
-
-    let mut progress_tracker = match player.track_progress(1000) {
-        Ok(progress_tracker) => progress_tracker,
-        Err(e) => panic!("{}", e),
-    };
-
     loop {
-        let ProgressTick {
-            progress,
-            progress_changed,
-            ..
-        } = progress_tracker.tick();
+        let player = PlayerFinder::new()
+            .expect("{{}}")
+            .find_active()
+            .expect("{{}}");
 
-        if !progress_changed {
-            continue;
-        };
+        let events = player.events().unwrap();
 
-        let metadata = progress.metadata();
-        let duration: String;
+        for _ in events {
+            if !player.is_running() {
+                break;
+            }
 
-        if let Some(length) = progress.length() {
-            duration = get_time(length);
-        } else {
-            duration = "".to_string();
-        };
+            let metadata = player.get_metadata().unwrap();
+            let duration: String;
 
-        let cover = get_cover(metadata);
+            if let Some(length) = metadata.length() {
+                duration = get_time(length);
+            } else {
+                duration = "".to_string();
+            };
 
-        let data = json!({
-            "status": get_playback_status(progress),
-            "artist": get_artist(metadata),
-            "title": get_title(metadata),
-            "duration": duration,
-            "cover": cover,
-            "background": get_background(&cover),
-        });
+            let cover = get_cover(&metadata);
 
-        println!("{}", data);
+            let data = json!({
+                "status": get_playback_status(&player.get_playback_status().unwrap()),
+                "artist": get_artist(&metadata),
+                "title": get_title(&metadata),
+                "duration": duration,
+                "cover": cover,
+                "background": get_background(&cover),
+            });
+
+            println!("{}", data);
+        }
     }
 }
 
@@ -95,8 +84,8 @@ fn get_title(metadata: &Metadata) -> String {
     metadata.title().unwrap_or("Unknown title").to_string()
 }
 
-fn get_playback_status(progress: &Progress) -> String {
-    match progress.playback_status() {
+fn get_playback_status(playback_status: &PlaybackStatus) -> String {
+    match playback_status {
         PlaybackStatus::Playing => "",
         PlaybackStatus::Paused => "",
         PlaybackStatus::Stopped => "",
@@ -107,7 +96,13 @@ fn get_playback_status(progress: &Progress) -> String {
 /// Caches cover art URLs and returns the path
 fn get_cover(metadata: &Metadata) -> PathBuf {
     let cache_dir = dirs::cache_dir().unwrap().into_os_string();
-    let url = metadata.art_url().unwrap_or("No cover art found");
+
+    let url: String = match metadata.art_url() {
+        Some(url) => url.to_owned(),
+        None => {
+            return PathBuf::new();
+        }
+    };
 
     if url.starts_with("file://") {
         // early return, don't cache on-disk files
@@ -134,6 +129,11 @@ fn get_cover(metadata: &Metadata) -> PathBuf {
 
 fn get_background(cover: &PathBuf) -> PathBuf {
     let cache_dir = dirs::cache_dir().unwrap().into_os_string();
+
+    if cover.clone().into_os_string().is_empty() {
+        return PathBuf::new();
+    }
+
     let bg = Path::new(&cache_dir)
         .join("eww/backgrounds")
         .join(cover.file_stem().unwrap());
@@ -144,17 +144,26 @@ fn get_background(cover: &PathBuf) -> PathBuf {
     }
 
     // blur cover
-    let image = image::load(
-        BufReader::new(File::open(cover).unwrap()),
-        ImageFormat::Jpeg,
-    )
-    .unwrap()
-    .blur(25.0);
+    println!("generating background...");
+    let bg_start = Instant::now();
+
+    let image = Reader::open(cover)
+        .unwrap()
+        .with_guessed_format()
+        .unwrap()
+        .decode()
+        .unwrap()
+        .blur(25.0);
 
     let mut bg_file = File::create(&bg).unwrap();
     image
         .write_to(&mut bg_file, ImageOutputFormat::Jpeg(80))
         .expect("Background image could not be written");
 
+    println!(
+        "background generated: {}.{} s",
+        bg_start.elapsed().as_secs(),
+        bg_start.elapsed().as_millis()
+    );
     bg
 }
