@@ -9,6 +9,7 @@ edition = "2021"
 [dependencies]
 clap = { version = "4", features = ["cargo", "derive"] }
 dirs = "5.0"
+fastblur = { git = "https://github.com/fschutt/fastblur" }
 image = "0.24.6"
 mpris = { path = "../mpris-rs" }
 reqwest = { version = "0.11.18", features = ["blocking"] }

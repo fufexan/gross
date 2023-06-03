@@ -327,6 +327,11 @@ dependencies = [
 ]
 
 [[package]]
+name = "fastblur"
+version = "0.1.1"
+source = "git+https://github.com/fschutt/fastblur#07629f9061db5d4c5f2cf9a40a8a5f7c6111123d"
+
+[[package]]
 name = "fastrand"
 version = "1.9.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -495,6 +500,7 @@ version = "0.1.0"
 dependencies = [
  "clap",
  "dirs",
+ "fastblur",
  "image",
  "mpris",
  "reqwest",

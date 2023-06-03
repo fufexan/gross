@@ -1,10 +1,11 @@
-use image::{io::Reader, ImageOutputFormat};
+use image::io::Reader;
 use mpris::{Metadata, PlaybackStatus, PlayerFinder};
 use serde_json::json;
 use std::{
     fs::File,
+    io::Write,
     path::{Path, PathBuf},
-    time::{Duration, Instant},
+    time::Duration,
 };
 
 extern crate dirs;
@@ -143,27 +144,52 @@ fn get_background(cover: &PathBuf) -> PathBuf {
         return bg;
     }
 
-    // blur cover
-    println!("generating background...");
-    let bg_start = Instant::now();
-
+    // load cover
     let image = Reader::open(cover)
         .unwrap()
         .with_guessed_format()
         .unwrap()
         .decode()
-        .unwrap()
-        .blur(25.0);
+        .unwrap();
 
+    // prepare for blurring
+    let width = image.width() as usize;
+    let height = image.height() as usize;
+    let data = image.into_bytes();
+
+    // sometimes images are borked, so fastblur cannot process them
+    // in that case, we simply return an empty path
+    if data.len() % 3 != 0 {
+        return PathBuf::new();
+    }
+
+    let mut data_new = unflatten(&data);
+
+    fastblur::gaussian_blur(&mut data_new, width, height, 25.0);
+
+    let mut buf = Vec::new();
+    let header = format!("P6\n{}\n{}\n{}\n", width, height, 255);
+    buf.write_all(header.as_bytes()).unwrap();
+
+    for px in data_new {
+        buf.write_all(&px).unwrap();
+    }
+
+    // write blurred image
     let mut bg_file = File::create(&bg).unwrap();
-    image
-        .write_to(&mut bg_file, ImageOutputFormat::Jpeg(80))
+    bg_file
+        .write_all(&buf)
         .expect("Background image could not be written");
 
-    println!(
-        "background generated: {}.{} s",
-        bg_start.elapsed().as_secs(),
-        bg_start.elapsed().as_millis()
-    );
     bg
+}
+
+fn unflatten(data: &[u8]) -> Vec<[u8; 3]> {
+    let iter = data.chunks(3);
+    let mut a = vec![];
+    for rgb in iter {
+        a.push([rgb[0], rgb[1], rgb[2]]);
+    }
+
+    a
 }
