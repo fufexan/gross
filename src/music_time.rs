@@ -20,7 +20,7 @@ pub fn main() {
         let ProgressTick { progress, .. } = progress_tracker.tick();
 
         let position: String;
-        let position_percent: u128;
+        let position_percent: f64;
 
         if progress.playback_status() != PlaybackStatus::Playing {
             continue;
@@ -28,15 +28,16 @@ pub fn main() {
 
         if let Some(length) = progress.length() {
             position = get_time(progress.position());
-            position_percent = progress.position().as_millis() * 100 / length.as_millis();
+            position_percent =
+                progress.position().as_millis() as f64 * 100.0 / length.as_millis() as f64;
         } else {
             position = "".to_string();
-            position_percent = 0;
+            position_percent = 0.0;
         };
 
         let data = json!({
             "position": position,
-            "position_percent": position_percent,
+            "position_percent": format!("{:.2}", position_percent),
         });
 
         println!("{}", data);
