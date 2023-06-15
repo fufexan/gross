@@ -8,8 +8,6 @@
       url = "github:hercules-ci/flake-parts";
       inputs.nixpkgs-lib.follows = "nixpkgs";
     };
-
-    naersk.url = "github:nix-community/naersk/master";
   };
 
   outputs = inputs:
@@ -38,13 +36,24 @@
           RUST_SRC_PATH = pkgs.rustPlatform.rustLibSrc;
         };
 
-        packages = {
-          gross = (pkgs.callPackage inputs.naersk {}).buildPackage {
-            src = ./.;
-            nativeBuildInputs = with pkgs; [pkg-config];
-            buildInputs = with pkgs; [dbus openssl];
-          };
-        } // { default = config.packages.gross; };
+        packages =
+          {
+            gross = pkgs.rustPlatform.buildRustPackage {
+              pname = "gross";
+              version = "0.1.0";
+
+              src = ./.;
+
+              cargoLock = {
+                lockFile = ./Cargo.lock;
+                outputHashes."fastblur-0.1.1" = "sha256-GRZbQn3+R5vkfOzB2F6WoKOf7hSiWO3qCpeir2VZtzM=";
+              };
+
+              nativeBuildInputs = with pkgs; [pkg-config];
+              buildInputs = with pkgs; [dbus openssl];
+            };
+          }
+          // {default = config.packages.gross;};
 
         formatter = pkgs.alejandra;
       };

@@ -11,7 +11,7 @@ clap = { version = "4", features = ["cargo", "derive"] }
 dirs = "5.0"
 fastblur = { git = "https://github.com/fschutt/fastblur" }
 image = "0.24.6"
-mpris = { path = "../mpris-rs" }
+mpris = "2.0.1"
 reqwest = { version = "0.11.18", features = ["blocking"] }
 serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
