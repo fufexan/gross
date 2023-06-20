@@ -8,44 +8,62 @@ use std::{
     time::Duration,
 };
 
-extern crate dirs;
-extern crate reqwest;
-
 pub fn main() {
     loop {
         let player = PlayerFinder::new()
-            .expect("{{}}")
-            .find_active()
-            .expect("{{}}");
+            .expect("Failed to create PlayerFinder")
+            .find_active();
 
-        let events = player.events().unwrap();
-
-        for _ in events {
-            if !player.is_running() {
-                break;
+        match player {
+            Ok(player) => {
+                monitor_player(player);
             }
+            Err(err) => {
+                println!();
+                eprintln!("Failed to find active player: {}", err);
+                // Wait for a while before searching for players again
+                std::thread::sleep(Duration::from_secs(1));
+            }
+        }
+    }
+}
 
-            let metadata = player.get_metadata().unwrap();
-            let duration: String;
+fn monitor_player(player: mpris::Player) {
+    let events = player.events().unwrap();
 
-            if let Some(length) = metadata.length() {
-                duration = get_time(length);
-            } else {
-                duration = "".to_string();
-            };
+    for _ in events {
+        if !player.is_running() {
+            break;
+        }
 
-            let cover = get_cover(&metadata);
+        let metadata_result = player.get_metadata();
 
-            let data = json!({
-                "status": get_playback_status(&player.get_playback_status().unwrap()),
-                "artist": get_artist(&metadata),
-                "title": get_title(&metadata),
-                "duration": duration,
-                "cover": cover,
-                "background": get_background(&cover),
-            });
+        match metadata_result {
+            Ok(metadata) => {
+                let duration: String;
 
-            println!("{}", data);
+                if let Some(length) = metadata.length() {
+                    duration = get_time(length);
+                } else {
+                    duration = "".to_string();
+                };
+
+                let cover = get_cover(&metadata);
+
+                let data = json!({
+                    "status": get_playback_status(&player.get_playback_status().unwrap()),
+                    "artist": get_artist(&metadata),
+                    "title": get_title(&metadata),
+                    "duration": duration,
+                    "cover": cover,
+                    "background": get_background(&cover),
+                });
+
+                println!("{}", data);
+            }
+            Err(err) => {
+                eprintln!("Error retrieving metadata: {}", err);
+            }
         }
     }
 }
@@ -112,7 +130,12 @@ fn get_cover(metadata: &Metadata) -> PathBuf {
         return cover.to_path_buf();
     }
 
-    let (_, suffix) = url.rsplit_once('/').unwrap();
+    let suffix = match url.rsplit_once('/') {
+        Some((_, suffix)) => suffix,
+        None => {
+            return PathBuf::new();
+        }
+    };
     let cover = Path::new(&cache_dir).join("eww/covers").join(suffix);
 
     if !cover.exists() {

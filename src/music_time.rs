@@ -1,20 +1,31 @@
-use mpris::{PlaybackStatus, PlayerFinder, ProgressTick};
+use mpris::{PlaybackStatus, PlayerFinder, ProgressTick, ProgressTracker};
 use serde_json::json;
 use std::time::Duration;
 
 pub fn main() {
-    let player = match PlayerFinder::new() {
-        Ok(player) => match player.find_active() {
-            Ok(p) => p,
-            Err(e) => panic!("{}", e),
-        },
-        Err(e) => panic!("{}", e),
-    };
+    loop {
+        let player = PlayerFinder::new()
+            .expect("Failed to create PlayerFinder")
+            .find_active();
+        match player {
+            Ok(player) => {
+                let progress_tracker = match player.track_progress(1000) {
+                    Ok(progress_tracker) => progress_tracker,
+                    Err(e) => panic!("{}", e),
+                };
+                monitor_player(progress_tracker);
+            }
+            Err(err) => {
+                println!();
+                eprintln!("Failed to find active player: {}", err);
+                std::thread::sleep(Duration::from_secs(1));
+            }
+        }
+    }
+}
 
-    let mut progress_tracker = match player.track_progress(1000) {
-        Ok(progress_tracker) => progress_tracker,
-        Err(e) => panic!("{}", e),
-    };
+fn monitor_player(mut progress_tracker: ProgressTracker) {
+    let mut old_data = json!({});
 
     loop {
         let ProgressTick { progress, .. } = progress_tracker.tick();
@@ -40,7 +51,10 @@ pub fn main() {
             "position_percent": format!("{:.2}", position_percent),
         });
 
-        println!("{}", data);
+        if data != old_data {
+            println!("{}", data);
+            old_data = data;
+        }
     }
 }
 
