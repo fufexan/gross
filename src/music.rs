@@ -1,12 +1,7 @@
 use image::io::Reader;
 use mpris::{Metadata, PlaybackStatus, PlayerFinder};
 use serde_json::json;
-use std::{
-    fs::File,
-    io::Write,
-    path::{Path, PathBuf},
-    time::Duration,
-};
+use std::{fs::File, io::Write, path::PathBuf, time::Duration};
 
 pub fn main() {
     loop {
@@ -31,72 +26,80 @@ pub fn main() {
 fn monitor_player(player: mpris::Player) {
     let events = player.events().unwrap();
 
+    print_metadata(&player);
+
     for _ in events {
         if !player.is_running() {
             break;
         }
-
-        let metadata_result = player.get_metadata();
-
-        match metadata_result {
-            Ok(metadata) => {
-                let duration: String;
-
-                if let Some(length) = metadata.length() {
-                    duration = get_time(length);
-                } else {
-                    duration = "".to_string();
-                };
-
-                let cover = get_cover(&metadata);
-
-                let data = json!({
-                    "status": get_playback_status(&player.get_playback_status().unwrap()),
-                    "artist": get_artist(&metadata),
-                    "title": get_title(&metadata),
-                    "duration": duration,
-                    "cover": cover,
-                    "background": get_background(&cover),
-                });
-
-                println!("{}", data);
-            }
-            Err(err) => {
-                eprintln!("Error retrieving metadata: {}", err);
-            }
-        }
+        print_metadata(&player);
     }
 }
 
+fn print_metadata(player: &mpris::Player) {
+    let metadata_result = player.get_metadata();
+
+    let data = metadata_result
+        .map(|metadata| {
+            let duration = metadata.length().map(get_time).unwrap_or_default();
+            let cover = get_cover(&metadata);
+            let background = get_background(&cover);
+
+            json!({
+                "status": get_playback_status(&player.get_playback_status().unwrap()),
+                "artist": get_artist(&metadata),
+                "title": get_title(&metadata),
+                "duration": duration,
+                "cover": cover.to_string_lossy(),
+                "background": background.to_string_lossy(),
+            })
+        })
+        .unwrap_or_else(|_| {
+            json!({
+                "status": "",
+                "artist": "",
+                "title": "",
+                "duration": "",
+                "cover": "",
+                "background": "",
+            })
+        });
+
+    println!("{}", data);
+}
+
 fn get_time(duration: Duration) -> String {
+    const MINUTE: u64 = 60;
+    const HOUR: u64 = 60 * MINUTE;
     let mut time = String::new();
 
     let secs = duration.as_secs();
-    let whole_hours = secs / (60 * 60);
+    let whole_hours = secs / HOUR;
 
     if whole_hours > 0 {
-        time.push_str(format!("{:02}:", whole_hours).as_str())
+        time.push_str(&format!("{:02}:", whole_hours));
     }
 
-    let secs = secs - whole_hours * 60 * 60;
-    let whole_minutes = secs / 60;
+    let secs = secs - whole_hours * HOUR;
+    let whole_minutes = secs / MINUTE;
+    let secs = secs - whole_minutes * MINUTE;
 
-    let secs = secs - whole_minutes * 60;
-    time.push_str(format!("{:02}:{:02}", whole_minutes, secs).as_str());
+    time.push_str(&format!("{:02}:{:02}", whole_minutes, secs));
 
     time
 }
 
 fn get_artist(metadata: &Metadata) -> String {
-    if let Some(artists) = metadata.artists() {
-        if !artists.is_empty() {
-            artists.join(", ")
-        } else {
-            "Unknown Artist".to_string()
-        }
-    } else {
-        "Unknown Artist".to_string()
-    }
+    metadata
+        .artists()
+        .map(|artists| {
+            if artists.is_empty() {
+                "Unknown Artist".to_string()
+            } else {
+                artists.join(", ")
+            }
+        })
+        .unwrap_or_else(|| "Unknown Artist".to_string())
 }
 
 fn get_title(metadata: &Metadata) -> String {
@@ -114,105 +117,86 @@ fn get_playback_status(playback_status: &PlaybackStatus) -> String {
 
 /// Caches cover art URLs and returns the path
 fn get_cover(metadata: &Metadata) -> PathBuf {
-    let cache_dir = dirs::cache_dir().unwrap().into_os_string();
+    let cache_dir = dirs::cache_dir().unwrap();
 
-    let url: String = match metadata.art_url() {
-        Some(url) => url.to_owned(),
-        None => {
-            return PathBuf::new();
+    if let Some(url) = metadata.art_url() {
+        if url.starts_with("file://") {
+            let normalized_url = url.strip_prefix("file://").unwrap();
+            return PathBuf::from(normalized_url);
         }
-    };
 
-    if url.starts_with("file://") {
-        // early return, don't cache on-disk files
-        let normalized_url = url.replace("file://", "");
-        let cover = Path::new(&normalized_url);
-        return cover.to_path_buf();
+        let suffix = url.rsplit_once('/').map(|(_, suffix)| suffix);
+        if let Some(suffix) = suffix {
+            let cover = cache_dir.join("eww/covers").join(suffix);
+            if !cover.exists() {
+                std::fs::create_dir_all(cover.parent().unwrap())
+                    .expect("Could not create covers cache directory");
+
+                let mut file = File::create(&cover).unwrap();
+
+                if let Ok(mut response) = reqwest::blocking::get(url) {
+                    if let Err(err) = std::io::copy(&mut response, &mut file) {
+                        eprintln!("Failed to download cover art: {}", err);
+                    }
+                } else {
+                    eprintln!("Failed to download cover art: Request failed");
+                }
+            }
+            return cover;
+        }
     }
 
-    let suffix = match url.rsplit_once('/') {
-        Some((_, suffix)) => suffix,
-        None => {
-            return PathBuf::new();
-        }
-    };
-    let cover = Path::new(&cache_dir).join("eww/covers").join(suffix);
-
-    if !cover.exists() {
-        std::fs::create_dir_all(cover.parent().unwrap()).unwrap();
-        let mut file = File::create(&cover).unwrap();
-
-        reqwest::blocking::get(url)
-            .unwrap()
-            .copy_to(&mut file)
-            .unwrap();
-    }
-
-    cover
+    PathBuf::new()
 }
 
 fn get_background(cover: &PathBuf) -> PathBuf {
-    let cache_dir = dirs::cache_dir().unwrap().into_os_string();
+    let cache_dir = dirs::cache_dir().unwrap();
 
     if cover.clone().into_os_string().is_empty() {
         return PathBuf::new();
     }
 
-    let bg = Path::new(&cache_dir)
+    let bg = cache_dir
         .join("eww/backgrounds")
         .join(cover.file_stem().unwrap());
-    std::fs::create_dir_all(bg.parent().unwrap()).unwrap();
+    std::fs::create_dir_all(bg.parent().unwrap()).expect("Background file could not be written");
 
     if bg.exists() {
         return bg;
     }
 
-    // load cover
-    let image = Reader::open(cover)
+    if let Ok(image) = Reader::open(cover)
         .unwrap()
         .with_guessed_format()
         .unwrap()
         .decode()
-        .unwrap();
+    {
+        let width = image.width() as usize;
+        let height = image.height() as usize;
+        let data = image.into_bytes();
 
-    // prepare for blurring
-    let width = image.width() as usize;
-    let height = image.height() as usize;
-    let data = image.into_bytes();
+        if data.len() % 3 == 0 {
+            let mut data_new = unflatten(&data);
+            fastblur::gaussian_blur(&mut data_new, width, height, 25.0);
 
-    // sometimes images are borked, so fastblur cannot process them
-    // in that case, we simply return an empty path
-    if data.len() % 3 != 0 {
-        return PathBuf::new();
+            let mut buf = Vec::new();
+            let header = format!("P6\n{}\n{}\n{}\n", width, height, 255);
+            buf.write_all(header.as_bytes()).unwrap();
+
+            for px in data_new {
+                buf.write_all(&px).unwrap();
+            }
+
+            File::create(&bg)
+                .unwrap()
+                .write_all(&buf)
+                .expect("Background image could not be written");
+        }
     }
-
-    let mut data_new = unflatten(&data);
-
-    fastblur::gaussian_blur(&mut data_new, width, height, 25.0);
-
-    let mut buf = Vec::new();
-    let header = format!("P6\n{}\n{}\n{}\n", width, height, 255);
-    buf.write_all(header.as_bytes()).unwrap();
-
-    for px in data_new {
-        buf.write_all(&px).unwrap();
-    }
-
-    // write blurred image
-    let mut bg_file = File::create(&bg).unwrap();
-    bg_file
-        .write_all(&buf)
-        .expect("Background image could not be written");
 
     bg
 }
 
 fn unflatten(data: &[u8]) -> Vec<[u8; 3]> {
-    let iter = data.chunks(3);
-    let mut a = vec![];
-    for rgb in iter {
-        a.push([rgb[0], rgb[1], rgb[2]]);
-    }
-
-    a
+    data.chunks(3).map(|rgb| [rgb[0], rgb[1], rgb[2]]).collect()
 }
