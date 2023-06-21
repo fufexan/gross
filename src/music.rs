@@ -43,7 +43,7 @@ fn print_metadata(player: &mpris::Player) {
         .map(|metadata| {
             let duration = metadata.length().map(get_time).unwrap_or_default();
             let cover = get_cover(&metadata);
-            let background = get_background(&cover);
+            let (background, foreground) = get_background(&cover);
 
             json!({
                 "status": get_playback_status(&player.get_playback_status().unwrap()),
@@ -52,6 +52,7 @@ fn print_metadata(player: &mpris::Player) {
                 "duration": duration,
                 "cover": cover.to_string_lossy(),
                 "background": background.to_string_lossy(),
+                "foreground": foreground,
             })
         })
         .unwrap_or_else(|_| {
@@ -62,6 +63,7 @@ fn print_metadata(player: &mpris::Player) {
                 "duration": "",
                 "cover": "",
                 "background": "",
+                "foreground": "light",
             })
         });
 
@@ -130,7 +132,7 @@ fn get_cover(metadata: &Metadata) -> PathBuf {
             let cover = cache_dir.join("eww/covers").join(suffix);
             if !cover.exists() {
                 std::fs::create_dir_all(cover.parent().unwrap())
-                    .expect("Could not create covers cache directory");
+                    .expect("Covers cache directory could not be created");
 
                 let mut file = File::create(&cover).unwrap();
 
@@ -149,20 +151,31 @@ fn get_cover(metadata: &Metadata) -> PathBuf {
     PathBuf::new()
 }
 
-fn get_background(cover: &PathBuf) -> PathBuf {
+fn get_background(cover: &PathBuf) -> (PathBuf, String) {
     let cache_dir = dirs::cache_dir().unwrap();
 
     if cover.clone().into_os_string().is_empty() {
-        return PathBuf::new();
+        return (PathBuf::new(), String::new());
     }
 
     let bg = cache_dir
         .join("eww/backgrounds")
         .join(cover.file_stem().unwrap());
-    std::fs::create_dir_all(bg.parent().unwrap()).expect("Background file could not be written");
+    std::fs::create_dir_all(bg.parent().unwrap()).expect("Background dir could not be created");
+    let fg_file = cache_dir
+        .join("eww/foregrounds")
+        .join(cover.file_stem().unwrap());
+    std::fs::create_dir_all(fg_file.parent().unwrap())
+        .expect("Foreground dir could not be created");
 
-    if bg.exists() {
-        return bg;
+    let mut fg = if let Ok(value) = std::fs::read_to_string(&fg_file) {
+        value
+    } else {
+        String::from("light")
+    };
+
+    if bg.exists() && fg_file.exists() {
+        return (bg, fg);
     }
 
     if let Ok(image) = Reader::open(cover)
@@ -171,10 +184,22 @@ fn get_background(cover: &PathBuf) -> PathBuf {
         .unwrap()
         .decode()
     {
+        // foreground
+        let luma = image.thumbnail(1, 1).to_luma8();
+        fg = if luma.into_raw()[0] > 100 {
+            "dark".to_owned()
+        } else {
+            "light".to_owned()
+        };
+        // write file with foreground value
+        std::fs::write(fg_file, &fg).expect("Foreground cache file could not be written");
+
+        // background blurred image
         let width = image.width() as usize;
         let height = image.height() as usize;
         let data = image.into_bytes();
 
+        // blur
         if data.len() % 3 == 0 {
             let mut data_new = unflatten(&data);
             fastblur::gaussian_blur(&mut data_new, width, height, 25.0);
@@ -187,14 +212,12 @@ fn get_background(cover: &PathBuf) -> PathBuf {
                 buf.write_all(&px).unwrap();
             }
 
-            File::create(&bg)
-                .unwrap()
-                .write_all(&buf)
-                .expect("Background image could not be written");
+            // write blurred file
+            std::fs::write(&bg, &buf).expect("Background image could not be written");
         }
     }
 
-    bg
+    (bg, fg)
 }
 
 fn unflatten(data: &[u8]) -> Vec<[u8; 3]> {
