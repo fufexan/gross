@@ -1,6 +1,11 @@
 [package]
 name = "gross"
-description = "Eww helper"
+description = "Eww JSON generator"
+authors = ["Mihai Fufezan"]
+repository = "https://github.com/fufexan/gross"
+license = "MIT"
+keywords = ["eww", "helper", "json"]
+categories = ["command-line-utilities"]
 version = "0.1.0"
 edition = "2021"
 

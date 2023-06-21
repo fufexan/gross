@@ -1,6 +1,6 @@
 <h1 align="center">gross</h1>
 
-# 🗒 About
+## 🗒 About
 
 This is a (simple) bundled collection of JSON generators that should be consumed by [Eww](https://github.com/elkowar/eww).
 It aims to replace my [shell scripts](https://github.com/fufexan/dotfiles/tree/e1e554fdddc2600635f6a9b9f3eb95b9a876d4c0/home/programs/eww/scripts),
