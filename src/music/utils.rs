@@ -29,12 +29,12 @@ pub fn unflatten(data: &[u8]) -> Vec<[u8; 3]> {
 
 pub fn cache_entry(file: &PathBuf, parent: &str) -> PathBuf {
     let cache_dir = dirs::cache_dir().unwrap();
-    let file = cache_dir.join(parent).join(file.file_stem().unwrap());
+    let file_new = cache_dir.join(parent).join(file.file_stem().unwrap());
     fs::create_dir_all(
         file.parent()
-            .expect(format!("Could not get parent of {:?}", file).as_str()),
+            .unwrap_or_else(|| panic!("Could not get parent of {:?}", file)),
     )
-    .expect(format!("{} could not be created", parent).as_str());
+    .unwrap_or_else(|_| panic!("{} could not be created", parent));
 
-    return file;
+    file_new
 }

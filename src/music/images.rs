@@ -49,10 +49,10 @@ pub fn get_foreground(cover: &PathBuf) -> String {
     }
 
     // get cache entry
-    let fg_file = utils::cache_entry(&cover, "eww/foregrounds");
+    let fg_file = utils::cache_entry(cover, "eww/foregrounds");
     // if the cache file could be read and matches known values, print that
     let mut fg = if let Ok(value) = fs::read_to_string(&fg_file) {
-        if value == "light".to_owned() || value == "dark".to_owned() {
+        if value == *"light" || value == *"dark" {
             value
         } else {
             String::from("light")
@@ -82,7 +82,7 @@ pub fn get_background(cover: &PathBuf) -> PathBuf {
         return PathBuf::new();
     }
 
-    let bg = utils::cache_entry(&cover, "eww/backgrounds");
+    let bg = utils::cache_entry(cover, "eww/backgrounds");
 
     if bg.exists() {
         return bg;
