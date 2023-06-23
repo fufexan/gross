@@ -5,6 +5,7 @@ use std::{
     io::Write,
     path::{Path, PathBuf},
 };
+use urlencoding;
 
 use crate::music::utils;
 
@@ -12,7 +13,11 @@ use crate::music::utils;
 pub fn get_cover(metadata: &Metadata) -> PathBuf {
     if let Some(url) = metadata.art_url() {
         if url.starts_with("file://") {
-            let normalized_url = url.strip_prefix("file://").unwrap();
+            let mut normalized_url = url.strip_prefix("file://").unwrap().to_owned();
+            if normalized_url.contains('%') {
+                normalized_url = urlencoding::decode(&normalized_url).expect("").to_string();
+            }
+            println!("{}", normalized_url);
             return PathBuf::from(normalized_url);
         }
 
