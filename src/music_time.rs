@@ -2,6 +2,8 @@ use mpris::{PlaybackStatus, Player, PlayerFinder, ProgressTick, ProgressTracker}
 use serde_json::json;
 use std::time::Duration;
 
+use crate::music::utils;
+
 pub fn main() {
     loop {
         if let Ok(player) = PlayerFinder::new()
@@ -28,7 +30,7 @@ fn get_position_data(player: &Player) -> serde_json::Value {
     let position;
     let position_percent;
     if let Some(length) = player.get_metadata().unwrap().length() {
-        position = get_time(player.get_position().unwrap());
+        position = utils::get_time(player.get_position().unwrap());
         position_percent =
             player.get_position().unwrap().as_millis() as f64 * 100.0 / length.as_millis() as f64;
     } else {
@@ -56,7 +58,7 @@ fn monitor_player(mut progress_tracker: ProgressTracker) {
         };
 
         if let Some(length) = progress.length() {
-            position = get_time(progress.position());
+            position = utils::get_time(progress.position());
             position_percent =
                 progress.position().as_millis() as f64 * 100.0 / length.as_millis() as f64;
         } else {
@@ -74,25 +76,4 @@ fn monitor_player(mut progress_tracker: ProgressTracker) {
             old_data = data;
         }
     }
-}
-
-fn get_time(duration: Duration) -> String {
-    const MINUTE: u64 = 60;
-    const HOUR: u64 = 60 * MINUTE;
-    let mut time = String::new();
-
-    let secs = duration.as_secs();
-    let whole_hours = secs / HOUR;
-
-    if whole_hours > 0 {
-        time.push_str(format!("{:02}:", whole_hours).as_str())
-    }
-
-    let secs = secs - whole_hours * HOUR;
-    let whole_minutes = secs / MINUTE;
-
-    let secs = secs - whole_minutes * MINUTE;
-    time.push_str(format!("{:02}:{:02}", whole_minutes, secs).as_str());
-
-    time
 }
