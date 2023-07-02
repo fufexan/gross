@@ -30,13 +30,15 @@ pub fn main() {
 fn generator(battery: &Battery) -> serde_json::Value {
     let energy_rate = battery.energy_rate().value;
 
-    let rate = if energy_rate == 0.0 {
+    let rate = if energy_rate == 0.0
+        || (battery.state() != State::Charging && battery.state() != State::Discharging)
+    {
         String::new()
     } else {
-        format!("{energy_rate:.1}")
+        format!("{energy_rate:.1} W")
     };
 
-    match battery.state() {
+    let status = match battery.state() {
         State::Charging => {
             #[allow(clippy::cast_possible_truncation)]
             let ttf = battery
@@ -46,56 +48,41 @@ fn generator(battery: &Battery) -> serde_json::Value {
 
             let time = seconds_to_string(ttf);
 
-            let status = if energy_rate > 0.0 {
+            if energy_rate > 0.0 {
                 format!("Charging, {time}")
             } else {
                 String::from("Plugged in")
-            };
-
-            json!({
-                "rate": rate,
-                "status": status
-            })
+            }
         }
         State::Discharging => {
             #[allow(clippy::cast_possible_truncation)]
             let tte = battery
                 .time_to_empty()
-                .expect("Could not get time to full")
+                .expect("Could not get time to empty")
                 .value as i64;
 
             let time = seconds_to_string(tte);
 
-            let status = if energy_rate > 0.0 {
+            if energy_rate > 0.0 {
                 time
             } else {
                 String::from("Discharging")
-            };
+            }
+        }
+        State::Full => String::from("Fully charged"),
+        _ => String::new(),
+    };
 
-            json!({
-                "rate": rate,
-                "status": status
-            })
-        }
-        State::Full => {
-            json!({
-                "rate": "",
-                "status": "Plugged in"
-            })
-        }
-        _ => {
-            json!({
-                "rate": "",
-                "status": ""
-            })
-        }
-    }
+    json!({
+        "rate": rate,
+        "status": status
+    })
 }
 
 fn seconds_to_string(seconds: i64) -> String {
-    const DAY: i64 = 24 * 60 * 60;
-    const HOUR: i64 = 60 * 60;
     const MINUTE: i64 = 60;
+    const HOUR: i64 = 60 * MINUTE;
+    const DAY: i64 = 24 * HOUR;
 
     let mut time_string = String::new();
 
