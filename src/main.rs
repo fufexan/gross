@@ -1,6 +1,7 @@
 use clap::command;
 use clap::{Parser, Subcommand};
 
+mod battery;
 mod music;
 mod music_time;
 
@@ -50,8 +51,7 @@ fn main() {
     // matches just as you would the top level cmd
     match &cli.command {
         Some(Commands::Battery) => {
-            println!("Battery command");
-            // upower-dbus crate
+            battery::main();
         }
         Some(Commands::Bluetooth) => {
             println!("Bluetooth command");
