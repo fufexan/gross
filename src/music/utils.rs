@@ -10,14 +10,14 @@ pub fn get_time(duration: Duration) -> String {
     let whole_hours = secs / HOUR;
 
     if whole_hours > 0 {
-        time.push_str(&format!("{:02}:", whole_hours));
+        time.push_str(&format!("{whole_hours:02}:"));
     }
 
     let secs = secs - whole_hours * HOUR;
     let whole_minutes = secs / MINUTE;
     let secs = secs - whole_minutes * MINUTE;
 
-    time.push_str(&format!("{:02}:{:02}", whole_minutes, secs));
+    time.push_str(&format!("{whole_minutes:02}:{secs:02}"));
 
     time
 }
@@ -28,13 +28,16 @@ pub fn unflatten(data: &[u8]) -> Vec<[u8; 3]> {
 }
 
 pub fn cache_entry(file: &PathBuf, parent: &str) -> PathBuf {
-    let cache_dir = dirs::cache_dir().unwrap();
-    let file_new = cache_dir.join(parent).join(file.file_stem().unwrap());
+    let cache_dir = dirs::cache_dir().unwrap_or_default();
+    let file_new = cache_dir
+        .join(parent)
+        .join(file.file_stem().unwrap_or_else(|| "cover".as_ref()));
+
     fs::create_dir_all(
         file.parent()
-            .unwrap_or_else(|| panic!("Could not get parent of {:?}", file)),
+            .unwrap_or_else(|| panic!("Could not get parent of {file:?}")),
     )
-    .unwrap_or_else(|_| panic!("{} could not be created", parent));
+    .unwrap_or_else(|_| panic!("{parent} could not be created"));
 
     file_new
 }

@@ -13,11 +13,11 @@ pub fn main() {
 
         match player {
             Ok(player) => {
-                monitor_player(player);
+                monitor_player(&player);
             }
             Err(err) => {
                 println!();
-                eprintln!("Failed to find active player: {}", err);
+                eprintln!("Failed to find active player: {err}");
                 // Wait for a while before searching for players again
                 std::thread::sleep(Duration::from_secs(1));
             }
@@ -25,16 +25,16 @@ pub fn main() {
     }
 }
 
-fn monitor_player(player: mpris::Player) {
-    let events = player.events().unwrap();
+fn monitor_player(player: &mpris::Player) {
+    let events = player.events().expect("Could not generate player events");
 
-    print_metadata(&player);
+    print_metadata(player);
 
     for _ in events {
         if !player.is_running() {
             break;
         }
-        print_metadata(&player);
+        print_metadata(player);
     }
 }
 
@@ -42,21 +42,8 @@ fn print_metadata(player: &mpris::Player) {
     let metadata_result = player.get_metadata();
 
     let data = metadata_result
-        .map(|metadata| {
-            let duration = metadata.length().map(utils::get_time).unwrap_or_default();
-            let cover = images::get_cover(&metadata);
-
-            json!({
-                "status": get_playback_status(&player.get_playback_status().unwrap()),
-                "artist": get_artist(&metadata),
-                "title": get_title(&metadata),
-                "duration": duration,
-                "cover": cover.to_string_lossy(),
-                "background": images::get_background(&cover).to_string_lossy(),
-                "foreground": images::get_foreground(&cover),
-            })
-        })
-        .unwrap_or_else(|_| {
+        .map_or_else(
+        |_| {
             json!({
                 "status": "",
                 "artist": "",
@@ -66,29 +53,43 @@ fn print_metadata(player: &mpris::Player) {
                 "background": "",
                 "foreground": "light",
             })
+        },            
+            |metadata| {
+            let duration = metadata.length().map(utils::get_time).unwrap_or_default();
+            let cover = images::get_cover(&metadata);
+
+            json!({
+                "status": get_playback_status(player.get_playback_status().expect("Could not get playback status")),
+                "artist": get_artist(&metadata),
+                "title": get_title(&metadata),
+                "duration": duration,
+                "cover": cover.to_string_lossy(),
+                "background": images::get_background(&cover).to_string_lossy(),
+                "foreground": images::get_foreground(&cover),
+            })
         });
 
-    println!("{}", data);
+    println!("{data}");
 }
 
 fn get_artist(metadata: &Metadata) -> String {
-    metadata
-        .artists()
-        .map(|artists| {
+    metadata.artists().map_or_else(
+        || "Unknown Artist".to_string(),
+        |artists| {
             if artists.is_empty() {
                 "Unknown Artist".to_string()
             } else {
                 artists.join(", ")
             }
-        })
-        .unwrap_or_else(|| "Unknown Artist".to_string())
+        },
+    )
 }
 
 fn get_title(metadata: &Metadata) -> String {
     metadata.title().unwrap_or("Unknown title").to_string()
 }
 
-fn get_playback_status(playback_status: &PlaybackStatus) -> String {
+fn get_playback_status(playback_status: PlaybackStatus) -> String {
     match playback_status {
         PlaybackStatus::Playing => "",
         PlaybackStatus::Paused => "",

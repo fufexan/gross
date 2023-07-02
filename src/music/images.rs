@@ -5,7 +5,6 @@ use std::{
     io::Write,
     path::{Path, PathBuf},
 };
-use urlencoding;
 
 use crate::music::utils;
 
@@ -13,11 +12,16 @@ use crate::music::utils;
 pub fn get_cover(metadata: &Metadata) -> PathBuf {
     if let Some(url) = metadata.art_url() {
         if url.starts_with("file://") {
-            let mut normalized_url = url.strip_prefix("file://").unwrap().to_owned();
+            let mut normalized_url = url
+                .strip_prefix("file://")
+                .expect("Could not strip prefix of image url")
+                .to_owned();
             if normalized_url.contains('%') {
-                normalized_url = urlencoding::decode(&normalized_url).expect("").to_string();
+                normalized_url = urlencoding::decode(&normalized_url)
+                    .expect("Could not decode url")
+                    .to_string();
             }
-            println!("{}", normalized_url);
+            println!("{normalized_url}");
             return PathBuf::from(normalized_url);
         }
 
@@ -28,13 +32,16 @@ pub fn get_cover(metadata: &Metadata) -> PathBuf {
             if !cover.exists() {
                 let mut file = File::create(&cover).expect("Cover file could not be created");
 
-                if let Ok(mut response) = reqwest::blocking::get(url) {
-                    if let Err(err) = std::io::copy(&mut response, &mut file) {
-                        eprintln!("Failed to download cover art: {}", err);
-                    }
-                } else {
-                    eprintln!("Failed to download cover art: Request failed");
-                }
+                reqwest::blocking::get(url).map_or_else(
+                    |_| {
+                        eprintln!("Failed to download cover art: Request failed");
+                    },
+                    |mut response| {
+                        if let Err(err) = std::io::copy(&mut response, &mut file) {
+                            eprintln!("Failed to download cover art: {err}");
+                        }
+                    },
+                );
             }
             return cover;
         }
@@ -55,17 +62,18 @@ pub fn get_foreground(cover: &PathBuf) -> String {
 
     // get cache entry
     let fg_file = utils::cache_entry(cover, "eww/foregrounds");
+
     // if the cache file could be read and matches known values, print that
-    let mut fg = if let Ok(value) = fs::read_to_string(&fg_file) {
-        if value == *"light" || value == *"dark" {
-            value
-        } else {
-            String::from("light")
-        }
-    // otherwise, assume light foreground
-    } else {
-        String::from("light")
-    };
+    let mut fg = fs::read_to_string(&fg_file).map_or_else(
+        |_| String::from("light"),
+        |value| {
+            if value == *"light" || value == *"dark" {
+                value
+            } else {
+                String::from("light")
+            }
+        },
+    );
 
     // generate grayscale pixel and check its luminance. over 100 we use dark foreground
     if let Ok(image) = get_image(cover) {
@@ -106,10 +114,12 @@ pub fn get_background(cover: &PathBuf) -> PathBuf {
 
             let mut buf = Vec::new();
             let header = format!("P6\n{}\n{}\n{}\n", width, height, 255);
-            buf.write_all(header.as_bytes()).unwrap();
+            buf.write_all(header.as_bytes())
+                .expect("Image header could not be written");
 
             for px in data_new {
-                buf.write_all(&px).unwrap();
+                buf.write_all(&px)
+                    .expect("File contents could not be written");
             }
 
             // write blurred file

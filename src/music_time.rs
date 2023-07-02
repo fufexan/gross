@@ -12,11 +12,11 @@ pub fn main() {
 
         match player {
             Ok(player) => {
-                monitor_player(player);
+                monitor_player(&player);
             }
             Err(err) => {
                 println!();
-                eprintln!("Failed to find active player: {}", err);
+                eprintln!("Failed to find active player: {err}");
                 // Wait for a while before searching for players again
                 std::thread::sleep(Duration::from_secs(1));
             }
@@ -27,30 +27,34 @@ pub fn main() {
 fn get_position_data(player: &Player) -> serde_json::Value {
     let position;
     let position_percent;
-    if let Some(length) = player.get_metadata().unwrap().length() {
-        position = utils::get_time(player.get_position().unwrap());
-        position_percent =
-            player.get_position().unwrap().as_millis() as f64 * 100.0 / length.as_millis() as f64;
+    if let Some(length) = player
+        .get_metadata()
+        .expect("Could not get metadata")
+        .length()
+    {
+        let pos = player.get_position().expect("Could not get position");
+        position = utils::get_time(pos);
+        position_percent = pos.as_secs_f64() * 100.0 / length.as_secs_f64();
     } else {
-        position = "".to_string();
+        position = String::new();
         position_percent = 0.0;
     };
 
     json!({
         "position": position,
-        "position_percent": format!("{:.2}", position_percent),
+        "position_percent": format!("{position_percent:.2}"),
     })
 }
 
-fn monitor_player(player: Player) {
+fn monitor_player(player: &Player) {
     let mut old_data = json!({});
 
-    println!("{}", get_position_data(&player));
+    println!("{}", get_position_data(player));
 
     loop {
-        let data = get_position_data(&player);
+        let data = get_position_data(player);
         if data != old_data {
-            println!("{}", data);
+            println!("{data}");
             old_data = data;
         }
 
