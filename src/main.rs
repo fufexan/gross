@@ -51,10 +51,7 @@ fn main() {
     // matches just as you would the top level cmd
     match &cli.command {
         Some(Commands::Battery) => {
-            println!("Battery command");
-            let bat = battery::main().unwrap();
-            println!("{:#?}", bat);
-            // upower-dbus crate
+            battery::main().unwrap();
         }
         Some(Commands::Bluetooth) => {
             println!("Bluetooth command");
