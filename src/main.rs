@@ -1,5 +1,6 @@
 use clap::command;
 use clap::{Parser, Subcommand};
+use clap_verbosity_flag::Verbosity;
 
 mod battery;
 mod music;
@@ -9,8 +10,8 @@ mod music_time;
 #[command(author, version, about, long_about = None)]
 struct Cli {
     /// Turn debugging information on
-    #[arg(short, long, action = clap::ArgAction::Count)]
-    debug: u8,
+    #[command(flatten)]
+    verbose: Verbosity,
 
     #[command(subcommand)]
     command: Option<Commands>,
@@ -39,26 +40,20 @@ enum Commands {
 fn main() {
     let cli = Cli::parse();
 
-    // You can see how many times a particular flag or argument occurred
-    // Note, only flags can have multiple occurrences
-    match cli.debug {
-        0 => {}
-        1 => println!("Debug mode is on"),
-        _ => println!("Don't be crazy"),
-    }
+    env_logger::Builder::new()
+        .filter_level(cli.verbose.log_level_filter())
+        .init();
 
-    // You can check for the existence of subcommands, and if found use their
-    // matches just as you would the top level cmd
     match &cli.command {
         Some(Commands::Battery) => {
             battery::main();
         }
         Some(Commands::Bluetooth) => {
-            println!("Bluetooth command");
+            todo!("Bluetooth command");
             // bluer crate
         }
         Some(Commands::Brightness) => {
-            println!("Brightness command");
+            todo!("Brightness command");
             // brightness crate
         }
         Some(Commands::Music) => {
@@ -68,16 +63,16 @@ fn main() {
             music_time::main();
         }
         Some(Commands::SystemInfo) => {
-            println!("SystemInfo command");
+            todo!("SystemInfo command");
             // sysinfo crate
             // includes net info
         }
         Some(Commands::Volume) => {
-            println!("Volume command");
+            todo!("Volume command");
             // pipewire crate?
         }
         Some(Commands::Workspaces) => {
-            println!("Workspaces command");
+            todo!("Workspaces command");
             // hyprland-rs crate
         }
         None => {}

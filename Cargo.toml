@@ -14,9 +14,12 @@ edition = "2021"
 [dependencies]
 battery = "0.7.8"
 clap = { version = "4", features = ["cargo", "derive"] }
+clap-verbosity-flag = "2.0.1"
 dirs = "5.0"
+env_logger = "0.10.0"
 fastblur = { git = "https://github.com/fschutt/fastblur" }
 image = "0.24.6"
+log = "0.4.19"
 mpris = "2.0.1"
 reqwest = { version = "0.11.18", features = ["blocking"] }
 serde = { version = "1.0", features = ["derive"] }
