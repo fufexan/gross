@@ -20,6 +20,7 @@ env_logger = "0.10.0"
 fastblur = { git = "https://github.com/fschutt/fastblur" }
 image = "0.24.6"
 log = "0.4.19"
+material-color-utilities-rs = { version = "0.2.1", features = ["serde"] }
 mpris = "2.0.1"
 reqwest = { version = "0.11.18", features = ["blocking"] }
 serde = { version = "1.0", features = ["derive"] }

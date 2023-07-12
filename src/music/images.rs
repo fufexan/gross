@@ -1,4 +1,7 @@
-use image::{io::Reader, DynamicImage};
+use image::{io::Reader, DynamicImage, GenericImageView};
+use material_color_utilities_rs::{
+    palettes, quantize::quantizer_celebi::QuantizerCelebi, scheme::Scheme, score::score,
+};
 use mpris::Metadata;
 use std::{
     fs::{self, File},
@@ -7,6 +10,15 @@ use std::{
 };
 
 use crate::music::utils;
+
+/// 24-bit pixel
+#[derive(Debug, serde::Serialize, Default)]
+struct Color {
+    r: u8,
+    g: u8,
+    b: u8,
+    a: u8,
+}
 
 /// Caches cover art URLs and returns the path
 pub fn get_cover(metadata: &Metadata) -> PathBuf {
@@ -60,34 +72,86 @@ pub fn get_foreground(cover: &PathBuf) -> String {
         return String::new();
     }
 
+    // TODO: implement caching
     // get cache entry
-    let fg_file = utils::cache_entry(cover, "eww/foregrounds");
+    // let fg_file = utils::cache_entry(cover, "eww/colors");
 
-    // if the cache file could be read and matches known values, print that
-    let mut fg = fs::read_to_string(&fg_file).map_or_else(
-        |_| String::from("light"),
-        |value| {
-            if value == *"light" || value == *"dark" {
-                value
-            } else {
-                String::from("light")
-            }
-        },
-    );
-
-    // generate grayscale pixel and check its luminance. over 100 we use dark foreground
+    let color;
     if let Ok(image) = get_image(cover) {
-        let luma = image.thumbnail(1, 1).to_luma8();
-        fg = if luma.into_raw()[0] > 100 {
-            "dark".to_owned()
-        } else {
-            "light".to_owned()
-        };
-        // write file with foreground value
-        fs::write(fg_file, &fg).expect("Foreground cache file could not be written");
-    }
+        let (width, height) = image.dimensions();
+        let resized_image = image.resize(
+            width / 64,
+            height / 64,
+            image::imageops::FilterType::Lanczos3,
+        );
 
-    fg
+        // put image data in a vec
+        // `image` provides pixels as Rgba, but material-colors expects ARGB
+        let mut pixels = vec![];
+        for (_, _, p) in resized_image.pixels() {
+            let c = Color {
+                r: p[0],
+                g: p[1],
+                b: p[2],
+                a: p[3],
+            };
+            pixels.push([c.a, c.r, c.g, c.b]);
+        }
+
+        // generate theme from image
+        let theme = QuantizerCelebi::quantize(&mut QuantizerCelebi, &pixels, 1);
+        let score = score(&theme);
+        print_color(
+            "score",
+            score
+                .first()
+                .expect("Could not get score from image")
+                .to_owned(),
+        );
+
+        theme
+            .into_iter()
+            .for_each(|(k, v)| log::info!("{k:?}{} = {v}", get_color(k)));
+
+        // generate palette based on theme color
+        let mut palette = palettes::core::CorePalette::new(
+            score.first().expect("No colors were scored").to_owned(),
+            true,
+        );
+
+        // generate dark scheme, we can use it for both light/dark situations
+        let scheme = Scheme::dark_from_core_palette(&mut palette);
+
+        // we take into account only the luminance of the viewport, aka the
+        // part of the image where text is rendered
+        let viewport = image.crop_imm(0, height / 3, width, height / 3);
+
+        // use primary or on_primary based on luma value
+        let luma = viewport.thumbnail(1, 1).to_luma8().into_raw()[0];
+        color = if luma > 130 {
+            // log::info!("generating dark palette (luma is {luma})");
+            scheme.on_primary
+        } else {
+            // log::info!("generating light palette (luma is {luma})");
+            scheme.primary
+        };
+
+        // debuggin time
+        print_color("Primary", scheme.primary);
+        print_color("On primary", scheme.on_primary);
+        print_color("Tertiary", scheme.tertiary);
+        print_color("On tertiary", scheme.on_tertiary);
+
+        return format!("rgb({},{},{})", color[1], color[2], color[3]);
+    }
+    String::new()
+}
+
+fn print_color(name: &str, c: [u8; 4]) {
+    log::info!("{name:12} \x1b[48;2;{};{};{}m  \x1b[0m", c[1], c[2], c[3]);
+}
+fn get_color(c: [u8; 4]) -> String {
+    format!("\x1b[48;2;{};{};{}m  \x1b[0m", c[1], c[2], c[3])
 }
 
 pub fn get_background(cover: &PathBuf) -> PathBuf {
