@@ -32,12 +32,15 @@ pub fn cache_entry(file: &PathBuf, parent: &str) -> PathBuf {
     let file_new = cache_dir
         .join(parent)
         .join(file.file_stem().unwrap_or_else(|| "cover".as_ref()));
+    log::trace!("new cache entry at {file_new:?}");
 
-    fs::create_dir_all(
+    if let Err(err) = fs::create_dir_all(
         file.parent()
             .unwrap_or_else(|| panic!("Could not get parent of {file:?}")),
-    )
-    .unwrap_or_else(|_| panic!("{parent} could not be created"));
-
+    ) {
+        log::warn!("{parent} could not be created. {err}");
+    } else {
+        log::trace!("{parent} created");
+    };
     file_new
 }

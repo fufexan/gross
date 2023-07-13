@@ -72,9 +72,13 @@ pub fn get_foreground(cover: &PathBuf) -> String {
         return String::new();
     }
 
-    // TODO: implement caching
     // get cache entry
-    // let fg_file = utils::cache_entry(cover, "eww/colors");
+    let fg_file = utils::cache_entry(cover, "eww/foregrounds");
+    if fg_file.exists() {
+        let value = std::fs::read_to_string(fg_file).expect("Could not read foreground file");
+        log::debug!("Foreground value read from cache: {value}");
+        return value;
+    }
 
     let color;
     if let Ok(image) = get_image(cover) {
@@ -129,12 +133,17 @@ pub fn get_foreground(cover: &PathBuf) -> String {
         // use primary or on_primary based on luma value
         let luma = viewport.thumbnail(1, 1).to_luma8().into_raw()[0];
         color = if luma > 130 {
-            // log::info!("generating dark palette (luma is {luma})");
+            log::info!("using on_primary color (luma is {luma})");
             scheme.on_primary
         } else {
-            // log::info!("generating light palette (luma is {luma})");
+            log::info!("using primary color (luma is {luma})");
             scheme.primary
         };
+
+        let rgb = format!("rgb({},{},{})", color[1], color[2], color[3]);
+
+        log::debug!("Writing generated {rgb} to cache");
+        std::fs::write(fg_file, &rgb).expect("Could not write foreground file");
 
         // debuggin time
         print_color("Primary", scheme.primary);
@@ -142,13 +151,13 @@ pub fn get_foreground(cover: &PathBuf) -> String {
         print_color("Tertiary", scheme.tertiary);
         print_color("On tertiary", scheme.on_tertiary);
 
-        return format!("rgb({},{},{})", color[1], color[2], color[3]);
+        return rgb;
     }
     String::new()
 }
 
 fn print_color(name: &str, c: [u8; 4]) {
-    log::info!("{name:12} \x1b[48;2;{};{};{}m  \x1b[0m", c[1], c[2], c[3]);
+    log::debug!("{name:12} \x1b[48;2;{};{};{}m  \x1b[0m", c[1], c[2], c[3]);
 }
 fn get_color(c: [u8; 4]) -> String {
     format!("\x1b[48;2;{};{};{}m  \x1b[0m", c[1], c[2], c[3])
