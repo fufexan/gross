@@ -175,6 +175,10 @@ pub fn get_background(cover: &PathBuf) -> PathBuf {
     }
 
     if let Ok(image) = get_image(cover) {
+        // downscale image
+        let (width, height) = image.dimensions();
+        let image = image.resize(width / 2, height / 2, image::imageops::FilterType::Lanczos3);
+
         // background blurred image
         let width = image.width() as usize;
         let height = image.height() as usize;

@@ -35,7 +35,8 @@ pub fn cache_entry(file: &PathBuf, parent: &str) -> PathBuf {
     log::trace!("new cache entry at {file_new:?}");
 
     if let Err(err) = fs::create_dir_all(
-        file.parent()
+        file_new
+            .parent()
             .unwrap_or_else(|| panic!("Could not get parent of {file:?}")),
     ) {
         log::warn!("{parent} could not be created. {err}");
