@@ -46,7 +46,10 @@
 
               cargoLock = {
                 lockFile = ./Cargo.lock;
-                outputHashes."fastblur-0.1.1" = "sha256-GRZbQn3+R5vkfOzB2F6WoKOf7hSiWO3qCpeir2VZtzM=";
+                outputHashes = {
+                  "fastblur-0.1.1" = "sha256-GRZbQn3+R5vkfOzB2F6WoKOf7hSiWO3qCpeir2VZtzM=";
+                  "hyprland-0.3.9" = "sha256-H5ib6tPcAzw8F4GGAIqJSbNtirZVOnmruWmsR9W5NJk=";
+                };
               };
 
               nativeBuildInputs = with pkgs; [pkg-config];
