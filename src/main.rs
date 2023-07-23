@@ -3,6 +3,7 @@ use clap::{Parser, Subcommand};
 use clap_verbosity_flag::Verbosity;
 
 mod battery;
+mod hyprland;
 mod music;
 mod music_time;
 
@@ -25,6 +26,8 @@ enum Commands {
     Bluetooth,
     /// Brightness info
     Brightness,
+    /// Hyprland info
+    Hyprland,
     /// General information about a song
     Music,
     /// Time information about a song
@@ -33,8 +36,6 @@ enum Commands {
     SystemInfo,
     /// Volume info
     Volume,
-    /// Workspaces info
-    Workspaces,
 }
 
 fn main() {
@@ -56,6 +57,9 @@ fn main() {
             todo!("Brightness command");
             // brightness crate
         }
+        Some(Commands::Hyprland) => {
+            hyprland::main();
+        }
         Some(Commands::Music) => {
             music::main();
         }
@@ -70,10 +74,6 @@ fn main() {
         Some(Commands::Volume) => {
             todo!("Volume command");
             // pipewire crate?
-        }
-        Some(Commands::Workspaces) => {
-            todo!("Workspaces command");
-            // hyprland-rs crate
         }
         None => {}
     }
