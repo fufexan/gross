@@ -12,7 +12,7 @@ Currently, the program has these commands functional:
 - music - general info about a song
 - music-time - time info about a song
 
-## ⚒ Building
+## ⚒ Building & Installing
 
 Most of the following instructions will assume you have this repository cloned.
 
@@ -29,6 +29,11 @@ cargo build --release
 ```
 
 Success! Now you can run the binary from `target/release/gross`.
+
+### Arch
+
+There is a PKGBUILD available on the AUR: <https://aur.archlinux.org/packages/gross-git>.
+Use your favourite AUR helper to install it.
 
 ### ❄ Nix
 
