@@ -44,35 +44,37 @@ pub async fn main() {
     let mut listener = event_listener::EventListener::new();
 
     // set initial values
-    let works = Workspaces::get().unwrap();
-    let workspaces = ws_from_workspaces(works);
+    let workspaces = ws_from_workspaces(Workspaces::get().expect("Cannot get workspaces"));
     let hyprland = Arc::new(Mutex::new(Hyprland {
         focused: WorkspaceType::Regular(String::from("1")),
         workspaces,
         screenshare: false,
     }));
 
+    // print initial values
+    println!("{}", json!(*hyprland));
+
     // handle workspace changes
     let hl = Arc::clone(&hyprland);
     listener.add_workspace_change_handler(move |id| {
-        let mut hl = hl.lock().unwrap();
-        hl.focused = id;
+        hl.lock().unwrap().focused = id;
+
         println!("{}", json!(*hl));
     });
 
     let hl = Arc::clone(&hyprland);
     listener.add_active_monitor_change_handler(move |event| {
-        let mut hl = hl.lock().unwrap();
-        hl.focused = event.workspace;
+        hl.lock().unwrap().focused = event.workspace;
+
         println!("{}", json!(*hl));
     });
 
     // handle workspace add/remove
     let hl = Arc::clone(&hyprland);
     let handle_add_remove = move |_| {
-        let mut hl = hl.lock().unwrap();
-        let works = Workspaces::get().unwrap();
-        hl.workspaces = ws_from_workspaces(works);
+        hl.lock().unwrap().workspaces =
+            ws_from_workspaces(Workspaces::get().expect("Cannot get workspaces"));
+
         println!("{}", json!(*hl));
     };
 
@@ -82,12 +84,10 @@ pub async fn main() {
     // handle screenshare
     let hl = Arc::clone(&hyprland);
     listener.add_screencast_handler(move |event| {
-        let mut hl = hl.lock().unwrap();
-        hl.screenshare = event.is_turning_on;
-    });
+        hl.lock().unwrap().screenshare = event.is_turning_on;
 
-    // print initial values
-    println!("{}", json!(*hyprland));
+        println!("{}", json!(*hl));
+    });
 
     // start event listener
     listener
@@ -114,10 +114,11 @@ fn ws_from_workspaces(workspaces: Workspaces) -> Vec<Ws> {
     // fill any workspaces between 1 and n
     for i in 1..=last {
         if !wss[..orig_len].iter().any(|e| e.id == i) {
-            wss.push(empty(i))
+            wss.push(empty(i));
         }
     }
-    // sort again
+
+    // sort
     wss.sort_by_key(|w| w.id);
 
     // create n+1 workspace
