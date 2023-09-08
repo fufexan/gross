@@ -1,7 +1,10 @@
-use std::sync::{Arc, Mutex};
+use std::{
+    collections::HashMap,
+    sync::{Arc, Mutex},
+};
 
 use hyprland::{
-    data::{Workspace, Workspaces},
+    data::{Monitors, Workspace, Workspaces},
     event_listener,
     shared::{HyprData, WorkspaceType},
 };
@@ -18,16 +21,17 @@ struct Ws {
     id: i32,
     name: String,
     state: WorkspaceState,
-    monitor: String,
+    monitor: i16,
 }
 
 impl From<Workspace> for Ws {
     fn from(value: Workspace) -> Self {
+        let monitors = mon_from_monitors(Monitors::get().expect("Cannot get monitors"));
         Self {
             id: value.id,
             name: value.name,
             state: WorkspaceState::Active,
-            monitor: value.monitor,
+            monitor: *monitors.get(&value.monitor).expect("No monitors?"),
         }
     }
 }
@@ -96,6 +100,10 @@ pub async fn main() {
         .expect("Could not start event listener");
 }
 
+fn mon_from_monitors(monitors: Monitors) -> HashMap<String, i16> {
+    monitors.map(|m| (m.name, m.id)).collect::<HashMap<_, _>>()
+}
+
 fn ws_from_workspaces(workspaces: Workspaces) -> Vec<Ws> {
     // create vec of ws from Workspaces iter
     let mut wss: Vec<Ws> = workspaces.map(Ws::from).collect();
@@ -106,7 +114,7 @@ fn ws_from_workspaces(workspaces: Workspaces) -> Vec<Ws> {
         id,
         name: id.to_string(),
         state: WorkspaceState::Empty,
-        monitor: String::new(),
+        monitor: 0,
     };
 
     let orig_len = wss.len();
