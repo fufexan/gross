@@ -6,7 +6,7 @@ use std::{
 use hyprland::{
     data::{Monitors, Workspace, Workspaces},
     event_listener,
-    shared::{HyprData, WorkspaceType},
+    shared::{HyprData, HyprError, WorkspaceType},
 };
 use serde_json::json;
 
@@ -26,12 +26,12 @@ struct Ws {
 
 impl From<Workspace> for Ws {
     fn from(value: Workspace) -> Self {
-        let monitors = mon_from_monitors(Monitors::get().expect("Cannot get monitors"));
+        let monitors = mon_from_monitors(Monitors::get());
         Self {
             id: value.id,
             name: value.name,
             state: WorkspaceState::Active,
-            monitor: *monitors.get(&value.monitor).expect("No monitors?"),
+            monitor: *monitors.get(&value.monitor).unwrap_or(&0),
         }
     }
 }
@@ -48,7 +48,7 @@ pub async fn main() {
     let mut listener = event_listener::EventListener::new();
 
     // set initial values
-    let workspaces = ws_from_workspaces(Workspaces::get().expect("Cannot get workspaces"));
+    let workspaces = ws_from_workspaces(Workspaces::get());
     let hyprland = Arc::new(Mutex::new(Hyprland {
         focused: WorkspaceType::Regular(String::from("1")),
         workspaces,
@@ -76,8 +76,7 @@ pub async fn main() {
     // handle workspace add/remove
     let hl = Arc::clone(&hyprland);
     let handle_add_remove = move |_| {
-        hl.lock().unwrap().workspaces =
-            ws_from_workspaces(Workspaces::get().expect("Cannot get workspaces"));
+        hl.lock().unwrap().workspaces = ws_from_workspaces(Workspaces::get());
 
         println!("{}", json!(*hl));
     };
@@ -100,15 +99,19 @@ pub async fn main() {
         .expect("Could not start event listener");
 }
 
-fn mon_from_monitors(monitors: Monitors) -> HashMap<String, i16> {
-    monitors.map(|m| (m.name, m.id)).collect::<HashMap<_, _>>()
+fn mon_from_monitors(monitors: Result<Monitors, HyprError>) -> HashMap<String, i16> {
+    monitors.map_or_else(
+        |_| {
+            vec![1]
+                .iter()
+                .map(|_| (String::from("eDP-1"), 0))
+                .collect::<HashMap<_, _>>()
+        },
+        |monitors| monitors.map(|m| (m.name, m.id)).collect::<HashMap<_, _>>(),
+    )
 }
 
-fn ws_from_workspaces(workspaces: Workspaces) -> Vec<Ws> {
-    // create vec of ws from Workspaces iter
-    let mut wss: Vec<Ws> = workspaces.map(Ws::from).collect();
-    let last = wss.iter().map(|w| w.id).max().expect("No workspaces?");
-
+fn ws_from_workspaces(workspaces: Result<Workspaces, HyprError>) -> Vec<Ws> {
     // create empty Ws based on id
     let empty = move |id| Ws {
         id,
@@ -116,6 +119,11 @@ fn ws_from_workspaces(workspaces: Workspaces) -> Vec<Ws> {
         state: WorkspaceState::Empty,
         monitor: 0,
     };
+
+    // create vec of ws from Workspaces iter, or one-ws vec if it fails
+    let mut wss: Vec<Ws> =
+        workspaces.map_or_else(|_| vec![empty(1)], |ws| ws.map(Ws::from).collect());
+    let last = wss.iter().map(|w| w.id).max().unwrap_or_default();
 
     let orig_len = wss.len();
 
