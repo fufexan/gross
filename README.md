@@ -9,6 +9,8 @@ which have become too complex to be written easily in bash.
 ## 🗃️  Contents
 
 Currently, the program has these commands functional:
+- battery - battery & charging information
+- hyprland - present workspaces, focused workspace, screensharing state
 - music - general info about a song
 - music-time - time info about a song
 
