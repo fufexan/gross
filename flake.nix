@@ -49,11 +49,21 @@
                 outputHashes = {
                   "fastblur-0.1.1" = "sha256-GRZbQn3+R5vkfOzB2F6WoKOf7hSiWO3qCpeir2VZtzM=";
                   "hyprland-0.3.9" = "sha256-H5ib6tPcAzw8F4GGAIqJSbNtirZVOnmruWmsR9W5NJk=";
+                  "wireplumber-0.1.0" = "";
                 };
               };
 
-              nativeBuildInputs = with pkgs; [pkg-config];
-              buildInputs = with pkgs; [dbus openssl];
+              nativeBuildInputs = with pkgs; [
+                pkg-config
+                rustPlatform.bindgenHook
+              ];
+              buildInputs = with pkgs; [
+                dbus
+                glib
+                openssl
+                pipewire
+                wireplumber
+              ];
             };
           }
           // {default = config.packages.gross;};

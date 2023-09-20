@@ -107,7 +107,11 @@ fn mon_from_monitors(monitors: Result<Monitors, HyprError>) -> HashMap<String, i
                 .map(|_| (String::from("eDP-1"), 0))
                 .collect::<HashMap<_, _>>()
         },
-        |monitors| monitors.map(|m| (m.name, m.id)).collect::<HashMap<_, _>>(),
+        |monitors| {
+            monitors
+                .map(|m| (m.name, m.id as i16))
+                .collect::<HashMap<_, _>>()
+        },
     )
 }
 

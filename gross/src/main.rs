@@ -73,7 +73,7 @@ fn main() {
         }
         Some(Commands::Volume) => {
             todo!("Volume command");
-            // pipewire crate?
+            // wireplumber?
         }
         None => {}
     }
