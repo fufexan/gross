@@ -3,7 +3,7 @@ use clap::{Parser, Subcommand};
 use clap_verbosity_flag::Verbosity;
 
 mod battery;
-mod hyprland;
+use hyprland;
 mod music;
 mod music_time;
 

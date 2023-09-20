@@ -18,7 +18,7 @@ clap-verbosity-flag = "2.0.1"
 dirs = "5.0"
 env_logger = "0.10.0"
 fastblur = { git = "https://github.com/fschutt/fastblur" }
-hyprland = { git = "https://github.com/hyprland-community/hyprland-rs" }
+hyprland = { path = "../hyprland" }
 image = "0.24.6"
 log = "0.4.19"
 material-color-utilities-rs = { version = "0.2.1", features = ["serde"] }

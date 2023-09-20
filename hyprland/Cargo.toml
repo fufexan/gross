@@ -1,0 +1,16 @@
+[package]
+name = "hyprland"
+description = "Hyprland JSON generator for Eww"
+authors = ["Mihai Fufezan"]
+repository = "https://github.com/fufexan/gross"
+license = "MIT"
+keywords = ["eww", "helper", "json"]
+categories = ["command-line-utilities"]
+version = "0.2.0"
+edition = "2021"
+
+[dependencies]
+hyprland = { git = "https://github.com/hyprland-community/hyprland-rs" }
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+tokio = "1.32.0"

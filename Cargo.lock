@@ -745,7 +745,7 @@ dependencies = [
  "dirs",
  "env_logger",
  "fastblur",
- "hyprland",
+ "hyprland 0.2.0",
  "image",
  "log",
  "material-color-utilities-rs",
@@ -893,6 +893,16 @@ dependencies = [
  "native-tls",
  "tokio",
  "tokio-native-tls",
+]
+
+[[package]]
+name = "hyprland"
+version = "0.2.0"
+dependencies = [
+ "hyprland 0.3.12",
+ "serde",
+ "serde_json",
+ "tokio",
 ]
 
 [[package]]
