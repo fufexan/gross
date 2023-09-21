@@ -750,19 +750,10 @@ dependencies = [
  "battery 0.2.0",
  "clap",
  "clap-verbosity-flag",
- "dirs",
  "env_logger",
- "fastblur",
  "hyprland 0.2.0",
- "image",
  "log",
- "material-color-utilities-rs",
- "mpris",
- "reqwest",
- "serde",
- "serde_json",
- "tokio",
- "urlencoding",
+ "music",
 ]
 
 [[package]]
@@ -1160,6 +1151,22 @@ dependencies = [
  "enum-kinds",
  "from_variants",
  "thiserror",
+]
+
+[[package]]
+name = "music"
+version = "0.2.0"
+dependencies = [
+ "dirs",
+ "fastblur",
+ "image",
+ "log",
+ "material-color-utilities-rs",
+ "mpris",
+ "reqwest",
+ "serde",
+ "serde_json",
+ "urlencoding",
 ]
 
 [[package]]

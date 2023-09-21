@@ -4,8 +4,7 @@ use clap_verbosity_flag::Verbosity;
 
 use battery;
 use hyprland;
-mod music;
-mod music_time;
+use music;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -61,10 +60,10 @@ fn main() {
             hyprland::main();
         }
         Some(Commands::Music) => {
-            music::main();
+            music::music();
         }
         Some(Commands::MusicTime) => {
-            music_time::main();
+            music::music_time();
         }
         Some(Commands::SystemInfo) => {
             todo!("SystemInfo command");
