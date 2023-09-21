@@ -126,6 +126,14 @@ checksum = "9ba43ea6f343b788c8764558649e08df62f86c6ef251fdaeb1ffd010a9ae50a2"
 
 [[package]]
 name = "battery"
+version = "0.2.0"
+dependencies = [
+ "battery 0.7.8",
+ "serde_json",
+]
+
+[[package]]
+name = "battery"
 version = "0.7.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b4b624268937c0e0a3edb7c27843f9e547c320d730c610d3b8e6e8e95b2026e4"
@@ -739,7 +747,7 @@ checksum = "6fb8d784f27acf97159b40fc4db5ecd8aa23b9ad5ef69cdd136d3bc80665f0c0"
 name = "gross"
 version = "0.2.0"
 dependencies = [
- "battery",
+ "battery 0.2.0",
  "clap",
  "clap-verbosity-flag",
  "dirs",

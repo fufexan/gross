@@ -12,7 +12,7 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-battery = "0.7.8"
+battery = { path = "../battery" }
 clap = { version = "4", features = ["cargo", "derive"] }
 clap-verbosity-flag = "2.0.1"
 dirs = "5.0"
