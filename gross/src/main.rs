@@ -5,6 +5,7 @@ use clap_verbosity_flag::Verbosity;
 use battery;
 use hyprland;
 use music;
+use notifications;
 
 #[derive(Parser)]
 #[command(author, version, about, long_about = None)]
@@ -31,6 +32,8 @@ enum Commands {
     Music,
     /// Time information about a song
     MusicTime,
+    /// Notification server
+    Notifications,
     /// System info, including net
     SystemInfo,
     /// Volume info
@@ -64,6 +67,9 @@ fn main() {
         }
         Some(Commands::MusicTime) => {
             music::music_time();
+        }
+        Some(Commands::Notifications) => {
+            notifications::main();
         }
         Some(Commands::SystemInfo) => {
             todo!("SystemInfo command");

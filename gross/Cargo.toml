@@ -16,6 +16,7 @@ battery = { path = "../battery" }
 clap = { version = "4", features = ["cargo", "derive"] }
 clap-verbosity-flag = "2.0.1"
 env_logger = "0.10.0"
-music = { path = "../music" }
 hyprland = { path = "../hyprland" }
 log = "0.4.19"
+music = { path = "../music" }
+notifications = { path = "../notifications" }

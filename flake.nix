@@ -48,8 +48,7 @@
                 lockFile = ./Cargo.lock;
                 outputHashes = {
                   "fastblur-0.1.1" = "sha256-GRZbQn3+R5vkfOzB2F6WoKOf7hSiWO3qCpeir2VZtzM=";
-                  "hyprland-0.3.9" = "sha256-H5ib6tPcAzw8F4GGAIqJSbNtirZVOnmruWmsR9W5NJk=";
-                  "wireplumber-0.1.0" = "";
+                  "hyprland-0.3.12" = "";
                 };
               };
 
@@ -58,9 +57,13 @@
                 rustPlatform.bindgenHook
               ];
               buildInputs = with pkgs; [
+                atk
                 dbus
                 glib
+                gdk-pixbuf
+                gtk3
                 openssl
+                pango
                 pipewire
                 wireplumber
               ];
