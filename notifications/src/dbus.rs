@@ -1,11 +1,9 @@
 use super::NotificationArc;
 use chrono::Local;
 use gtk::{prelude::IconThemeExt, IconLookupFlags, IconTheme};
-use std::collections::HashMap;
-use zbus::zvariant::Value;
 use zbus::{dbus_interface, Connection};
 
-use crate::{icon::Icon, Notification};
+use crate::{types::Hints, Notification};
 
 const CAPABILITIES: [&str; 6] = [
     "icons",
@@ -46,7 +44,7 @@ impl NotificationServer {
         summary: String,
         body: String,
         actions: Vec<String>,
-        hints: HashMap<String, Value<'_>>,
+        hints: Hints,
         expire_timeout: i32,
     ) -> u32 {
         gtk::init().expect("Failed to initialize GTK");
@@ -73,22 +71,18 @@ impl NotificationServer {
             }
         };
 
-        let action_icons = hints.get("action-icons");
-        let desktop_entry: String = hints
-            .get("desktop-entry")
-            .and_then(|v| v.clone().downcast())
-            .unwrap_or(app_name.clone());
+        let action_icons = hints.action_icons;
+        let desktop_entry = hints.desktop_entry;
         // let image_data_d = hints.get("image_data");
         // let image_data = hints.get("image-data");
         // let image_path_d = hints.get("image_path");
         // let image_path = hints.get("image-path");
 
-        let icon_data_hint = hints.get("icon_data");
-        let icon_data: Option<Icon> = icon_data_hint.and_then(|v| v.clone().downcast());
+        let icon_data = hints.icon_data;
 
         let mut image = String::new();
-        if let Some(icon) = icon_data {
-            if let Ok(imgpath) = icon.write_image(&app_name, changed_id) {
+        if icon_data.width != 0 {
+            if let Ok(imgpath) = icon_data.write_image(&app_name, changed_id) {
                 image = imgpath;
             }
         };
@@ -106,10 +100,7 @@ impl NotificationServer {
             time,
             body,
             actions,
-            urgency: hints
-                .get("urgency")
-                .and_then(|v| v.clone().downcast())
-                .unwrap_or_default(),
+            urgency: hints.urgency,
             image,
             timeout: expire_timeout,
             visible: true,

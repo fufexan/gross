@@ -69,7 +69,7 @@ fn main() {
             music::music_time();
         }
         Some(Commands::Notifications) => {
-            notifications::main();
+            let _ = notifications::main();
         }
         Some(Commands::SystemInfo) => {
             todo!("SystemInfo command");

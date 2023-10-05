@@ -1,9 +1,10 @@
 use std::{fs, path::PathBuf};
 
 use image::{self, DynamicImage, RgbImage, RgbaImage};
-use zbus::{export::serde::Serialize, zvariant::Value};
+use serde::Deserialize;
+use zbus::{export::serde::Serialize, zvariant::Type, zvariant::Value};
 
-#[derive(Debug, Default, Clone, Serialize, Value)]
+#[derive(Debug, Default, Clone, Deserialize, Serialize, Value, Type)]
 pub struct Icon {
     // image width
     pub width: i32,

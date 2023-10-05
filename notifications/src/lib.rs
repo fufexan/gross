@@ -1,5 +1,6 @@
 mod dbus;
 mod icon;
+mod types;
 
 use std::fs;
 use std::time::Duration;
@@ -10,42 +11,15 @@ use tokio::sync::Mutex;
 
 use anyhow::Result;
 use nohash_hasher::NoHashHasher;
-use zbus::export::serde::Serialize;
+use types::Notification;
 
 use crate::dbus::async_run;
 
 type NotificationArc =
     Arc<Mutex<HashMap<u32, Notification, BuildHasherDefault<NoHashHasher<u32>>>>>;
 
-#[derive(Serialize)]
-pub struct Notifications<'a> {
-    pub notifications: Vec<&'a Notification>,
-}
-
-#[derive(Debug, Clone, PartialEq, Serialize)]
-pub struct Notification {
-    pub id: u32,
-    pub app_name: String,
-    pub app_icon: String,
-    pub summary: String,
-    pub body: String,
-    pub time: String,
-    pub image: String,
-    pub timeout: i32,
-    pub urgency: u8,
-    pub actions: Vec<String>,
-    pub visible: bool,
-}
-
-#[derive(Debug, Clone, PartialEq)]
-pub enum Action {
-    Close,
-    Clear,
-    Notify(Notification),
-}
-
 #[tokio::main]
-async fn main() -> Result<()> {
+pub async fn main() -> Result<()> {
     let notifications: NotificationArc = Arc::new(Mutex::new(HashMap::with_hasher(
         BuildHasherDefault::default(),
     )));
@@ -88,7 +62,7 @@ async fn main() -> Result<()> {
         }
     });
 
-    async_run(notifications.clone()).await?;
+    async_run(Arc::clone(&notifications)).await?;
 
     Ok(())
 }
