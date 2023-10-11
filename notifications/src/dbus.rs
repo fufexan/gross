@@ -71,7 +71,7 @@ impl NotificationServer {
             }
         };
 
-        let action_icons = hints.action_icons;
+        // let action_icons = hints.action_icons;
         let desktop_entry = hints.desktop_entry;
         // let image_data_d = hints.get("image_data");
         // let image_data = hints.get("image-data");
@@ -81,12 +81,13 @@ impl NotificationServer {
         let icon_data = hints.icon_data;
 
         let mut image = String::new();
-        if icon_data.width != 0 {
+        if icon_data.is_some() {
+            let icon_data = icon_data.as_ref().unwrap();
             if let Ok(imgpath) = icon_data.write_image(&app_name, changed_id) {
                 image = imgpath;
             }
         };
-        println!("action_icons: {:?}", action_icons);
+        // println!("action_icons: {:?}", action_icons);
         println!("desktop_entry: {:?}", desktop_entry);
         // println!("icon_data: {:?}", icon_data);
 

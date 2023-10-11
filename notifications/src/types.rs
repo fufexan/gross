@@ -1,22 +1,31 @@
 use crate::icon::Icon;
-use serde::{Deserialize, Serialize};
-use zbus::zvariant::Type;
+use serde::Serialize;
+use zbus::zvariant::{DeserializeDict, Optional, SerializeDict, Type};
 
-#[derive(Debug, Default, Clone, Deserialize, Serialize, Type)]
+#[derive(Debug, Default, Clone, DeserializeDict, SerializeDict, Type)]
+#[zvariant(signature = "dict")]
 pub struct Hints {
-    pub action_icons: bool,
-    pub category: String,
-    pub desktop_entry: String,
-    pub image_data: Icon,
-    pub image_path: String,
-    pub icon_data: Icon,
-    pub resident: bool,
-    pub sound_file: String,
-    pub sound_name: String,
-    pub suppress_sound: bool,
-    pub transient: bool,
-    pub x: i32,
-    pub y: i32,
+    pub action_icons: Optional<bool>,
+    pub category: Optional<String>,
+    #[zvariant(rename = "desktop-entry")]
+    pub desktop_entry: Optional<String>,
+    pub image_data: Optional<Icon>,
+    #[zvariant(rename = "image-data")]
+    pub image_data_: Optional<Icon>,
+    #[zvariant(rename = "image-path")]
+    pub image_path: Optional<String>,
+    pub image_path_: Optional<String>,
+    pub icon_data: Optional<Icon>,
+    pub resident: Optional<bool>,
+    #[zvariant(rename = "sound-file")]
+    pub sound_file: Optional<String>,
+    #[zvariant(rename = "sound-name")]
+    pub sound_name: Optional<String>,
+    #[zvariant(rename = "suppress-sound")]
+    pub suppress_sound: Optional<bool>,
+    pub transient: Optional<bool>,
+    pub x: Optional<i32>,
+    pub y: Optional<i32>,
     pub urgency: u8,
 }
 

@@ -4,7 +4,7 @@ use image::{self, DynamicImage, RgbImage, RgbaImage};
 use serde::Deserialize;
 use zbus::{export::serde::Serialize, zvariant::Type, zvariant::Value};
 
-#[derive(Debug, Default, Clone, Deserialize, Serialize, Value, Type)]
+#[derive(Debug, Default, Clone, Deserialize, Serialize, Value, Type, PartialEq)]
 pub struct Icon {
     // image width
     pub width: i32,

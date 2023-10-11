@@ -69,7 +69,10 @@ fn main() {
             music::music_time();
         }
         Some(Commands::Notifications) => {
-            let _ = notifications::main();
+            match notifications::main() {
+                Ok(_) => (),
+                Err(e) => eprintln!("{}", e),
+            };
         }
         Some(Commands::SystemInfo) => {
             todo!("SystemInfo command");
