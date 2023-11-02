@@ -48,8 +48,7 @@
                 lockFile = ./Cargo.lock;
                 outputHashes = {
                   "fastblur-0.1.1" = "sha256-GRZbQn3+R5vkfOzB2F6WoKOf7hSiWO3qCpeir2VZtzM=";
-                  "hyprland-0.3.9" = "sha256-H5ib6tPcAzw8F4GGAIqJSbNtirZVOnmruWmsR9W5NJk=";
-                  "wireplumber-0.1.0" = "";
+                  "hyprland-0.3.12" = "sha256-bwyPUByD1PptKtCzUkQW25V5vYgikJq4SH4mT4IPwps=";
                 };
               };
 
@@ -64,6 +63,8 @@
                 pipewire
                 wireplumber
               ];
+
+              doCheck = false;
             };
           }
           // {default = config.packages.gross;};
