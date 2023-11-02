@@ -25,7 +25,13 @@ pub fn main() {
             .find_active();
 
         if let Ok(player) = player {
-            let events = player.events().expect("Could not generate player events");
+            let events = match player.events() {
+                Ok(e) => e,
+                Err(e) => {
+                    log::warn!("{e}");
+                    continue;
+                }
+            };
             let mut data = get_metadata(&player);
             if old_data != data {
                 println!("{}", json!(data));
