@@ -31,7 +31,7 @@ async fn main() -> std::result::Result<(), Box<dyn Error>> {
 
     let primary_connection = nm_proxy.primary_connection().await?;
 
-    println!("Primary connection: {}", primary_connection);
+    log::debug!("New primary connection: {}", primary_connection);
 
     let primary_connection_proxy = ActiveConnectionProxy::builder(&connection)
         .path(primary_connection)?
@@ -39,10 +39,16 @@ async fn main() -> std::result::Result<(), Box<dyn Error>> {
         .await?;
 
     let id = primary_connection_proxy.id().await?;
-    let connection_type = primary_connection_proxy.connection_type().await?;
+    log::debug!("id: {:?}", id);
 
-    println!("id: {:?}", id);
-    println!("type: {connection_type}");
+    let connection_type = primary_connection_proxy.connection_type().await?;
+    log::debug!("type: {connection_type}");
+
+    // event loop
+    let mut nm_stream = nm_proxy.receive_primary_connection_changed().await;
+    while let Some(e) = nm_stream.next().await {
+        println!("{:?}", e.get().await);
+    }
 
     Ok(())
 }
