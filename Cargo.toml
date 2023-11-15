@@ -1,7 +1,9 @@
 [workspace]
+resolver = "2"
 
 members = [
   "battery",
   "gross",
   "hyprland",
+  "network_manager",
 ]
